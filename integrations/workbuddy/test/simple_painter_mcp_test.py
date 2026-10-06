@@ -143,6 +143,21 @@ class SimplePainterMcpTest(unittest.TestCase):
         )["result"]
         self.assertFalse(disconnected["structuredContent"]["connected"])
 
+    def test_new_tools_forward_revision_and_native_tree_arguments(self):
+        for index, (name, arguments) in enumerate([
+            ('simple_painter_update_organized_draft', {'draft_id': 'draft-1',
+             'text': 'new', 'expected_text': 'old', 'expected_updated_at': 'revision'}),
+            ('simple_painter_create_mind_map', {'nodes': [
+             {'key': 'root', 'text': '主题'}, {'key': 'child', 'text': '分支', 'parent_key': 'root'}]}),
+        ]):
+            result = self._request(index + 20, 'tools/call', {
+                'name': name, 'arguments': arguments})['result']['structuredContent']
+            self.assertEqual(result['echo'], {'name': name, 'arguments': arguments})
+        self.descriptor.unlink()
+        names = {tool['name'] for tool in self._request(30, 'tools/list')['result']['tools']}
+        self.assertIn('simple_painter_update_organized_draft', names)
+        self.assertIn('simple_painter_create_mind_map', names)
+
     def test_discovers_macos_sandbox_descriptor(self):
         fake_home = Path(self.temp_directory.name) / "home"
         sandbox_descriptor = (

@@ -1,6 +1,6 @@
 {
   "name": "simple-painter",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Connect WorkBuddy to a running Simple Painter canvas for visual thinking, mind maps, and diagram editing.",
   "author": {
     "name": "Simple Painter"
@@ -8,7 +8,13 @@
   "homepage": "https://github.com/CanArslanDev/simple_painter",
   "repository": "https://github.com/CanArslanDev/simple_painter",
   "license": "MIT",
-  "keywords": ["canvas", "whiteboard", "mindmap", "diagram", "mcp"],
+  "keywords": [
+    "canvas",
+    "whiteboard",
+    "mindmap",
+    "diagram",
+    "mcp"
+  ],
   "category": "productivity",
   "defaultEnabled": true
 }

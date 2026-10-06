@@ -14,7 +14,7 @@ from typing import Any, BinaryIO, Dict, List, Optional
 
 
 SERVER_NAME = "simple-painter-workbuddy"
-SERVER_VERSION = "0.1.0"
+SERVER_VERSION = "0.3.0"
 PROTOCOL_VERSION = "2025-06-18"
 SUPPORTED_PROTOCOL_VERSIONS = {"2024-11-05", "2025-03-26", PROTOCOL_VERSION}
 DESCRIPTOR_FILE_NAME = "simple-painter-workbuddy-bridge.json"
@@ -242,7 +242,427 @@ def _fallback_tools() -> List[Dict[str, Any]]:
             "annotations": write_annotation,
         },
     ]
-    return tools
+    return tools + _additional_tools()
+
+
+def _additional_tools() -> List[Dict[str, Any]]:
+    # Generated from the Flutter tool registry; parity is checked by a Flutter test.
+    return json.loads(r'''
+[
+  {
+    "name": "simple_painter_create_mind_map",
+    "description": "创建真正可编辑的原生思维导图（需要确认），一次创建中心主题、所有层级节点和父子分支，并自动排版。用户说创建思维导图时优先使用本工具，不要用普通文本卡片、关联线或 HTML 替代。nodes 必须恰好有一个不填 parent_key 的根节点；其余 parent_key 引用本次 nodes 中的 key。key 是临时标识，不是已有卡片 ID。最多 100 个主题、16 层。省略坐标时使用当前视口。",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "parent_key": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "key",
+              "text"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "nodes"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "idempotentHint": false,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "simple_painter_add_mind_map_node",
+    "description": "在已有原生导图成员下新增子主题及父子分支，并整理该导图（需要确认）。parent_id 必须来自读取结果或 create_mind_map 返回的真实 item_id，不能使用临时 key。修改已有主题文字使用 replace_text_in_item。",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "parent_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      },
+      "required": [
+        "parent_id",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "idempotentHint": false,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "simple_painter_layout_mind_map",
+    "description": "整理指定原生思维导图，保留父子关系和中心位置，仅调整该导图布局（需要确认）。item_id 可为导图任一成员，普通卡片树形排版使用 auto_layout_tree。",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "item_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "item_id"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "idempotentHint": false,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "simple_painter_attach_mind_map_card",
+    "description": "将已有卡片（item_id）依附/挂接到原生导图父主题（parent_id）下（需要确认）。默认只补挂普通卡片；已有父主题或原生主题需用户明确要求改挂并传 allow_reparent=true。保留卡片 ID、类型、内容和后代；支持文本、图片、音频、形状和有尺寸的自定义卡片。仅支持当前空间，两个 ID 必须来自读取结果，禁止循环与锁定关系变更。自动整理受影响导图；重复挂到相同父主题不重复创建。新增文字子主题用 add_mind_map_node；普通引用关联用 link_items。",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "item_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "allow_reparent": {
+          "type": "boolean",
+          "description": "仅在用户明确要求调整已有层级时传 true，默认 false。"
+        }
+      },
+      "required": [
+        "item_id",
+        "parent_id"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "idempotentHint": false,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "simple_painter_batch_attach_mind_map_cards",
+    "description": "批量将未归类的普通卡片依附到已有导图主题（需要确认）。一次提交完整归属清单，最多128张；统一布局与验收。保留内容和普通关联。锁定、原生主题、已归类卡片逐项跳过并说明，成功项保留；不改变已有主题层级。",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 128,
+          "items": {
+            "type": "object",
+            "properties": {
+              "item_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "parent_id": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "item_id",
+              "parent_id"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "idempotentHint": false,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "simple_painter_detach_mind_map_card",
+    "description": "将已有卡片（item_id）从父分支脱离（需要确认），保留卡片和整棵子树，不删除内容，不移除普通引用关联。仅支持当前空间；没有父分支时不作修改。重新整理原导图，支持单步撤销。",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "item_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "item_id"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "idempotentHint": false,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "simple_painter_replace_text_in_item",
+    "description": "直接替换指定文本组件的正文内容。",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "item_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "item_id",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "idempotentHint": false,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "simple_painter_read_canvas_items",
+    "description": "按 ID 完整回读当前空间组件及其出向关联，用于写入后的验收。同时返回原生导图的 semantic_kind 和 mind_map 层级。返回完整性和空间标识；空间不匹配时返回错误，不将其他空间的缺失当作删除成功。",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "item_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "x-delimited-string": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "space_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "item_ids"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "simple_painter_list_organized_drafts",
+    "description": "List draft titles and revision tokens in the current space.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "simple_painter_get_organized_draft",
+    "description": "Read Markdown and saved state of an independent organized draft in the current space.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "draft_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "draft_id"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "simple_painter_get_organized_draft_sources",
+    "description": "Read current whiteboard source cards with sanxing://card citation URLs to compose a draft. Preserve source links and distinguish facts from inference.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "simple_painter_create_organized_draft",
+    "description": "Create an independent Markdown draft in the current space. Persist recovery but leave it unsaved; this does not create a canvas card. Use save_organized_draft only when requested.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "maxLength": 200000
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "idempotentHint": false,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "simple_painter_update_organized_draft",
+    "description": "Replace draft Markdown, preserving its saved baseline. First read it and send exact expected_text and expected_updated_at. Close its active editor before writing; stale content is rejected.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "draft_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 200000
+        },
+        "expected_text": {
+          "type": "string",
+          "maxLength": 200000
+        },
+        "expected_updated_at": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "draft_id",
+        "text",
+        "expected_text",
+        "expected_updated_at"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "idempotentHint": false,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "simple_painter_save_organized_draft",
+    "description": "Explicitly mark current draft Markdown saved. First read it; provide exact expected_text and expected_updated_at. Close its active editor before saving.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "draft_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expected_text": {
+          "type": "string",
+          "maxLength": 200000
+        },
+        "expected_updated_at": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "draft_id",
+        "expected_text",
+        "expected_updated_at"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "idempotentHint": false,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  }
+]
+''')
 
 
 class BridgeError(RuntimeError):

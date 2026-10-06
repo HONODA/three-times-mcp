@@ -37,6 +37,14 @@ python3 install.py --target workbuddy
 
 脚本在 `integrations/workbuddy/server/simple_painter_mcp.py` 或快捷安装后的长期应用数据目录。
 
+## 空间归属建议（0.4.0）
+
+外部 AI 可以用 `simple_painter_get_space_summaries` 阅读本地空间名称、父子层级、代表卡片摘录和整理稿标题。支持 `space_ids`、`offset`、`limit`、`sample_limit`；按 `next_offset` 翻页。当前空间使用未保存的实时卡片，其他空间使用本地快照。恢复副本不作为归属推荐目标；不存在或无法读取的空间明确标识，不能当成空空间。
+
+`simple_painter_search_canvas_items` 已提供跨空间检索；0.4.0 的离线目录补齐 `scope: all/subtree/current`、`space_ids`、`item_ids` 和分页参数，与客户端一致。先查相关内容，再解释推荐位置；用户明确指定空间时按指定位置处理。确认目标后导航并重新读取，再执行已授权的写入。概览本身不会切换空间或移动卡片，未实现自动归档或偏好学习。本更新不修改三省内置 AI 提示词。
+
+这些接口需要新版三省客户端，仅更新插件不会给旧客户端增加接口。
+
 ## 新增能力（0.3.0）
 
 - **整理稿**：列出与读取当前空间稿件、读取白板来源及引用链接、创建 Markdown 稿件、修改正文、显式保存。AI 可以读来源后撰写整理稿，无需额外调用内置 AI。

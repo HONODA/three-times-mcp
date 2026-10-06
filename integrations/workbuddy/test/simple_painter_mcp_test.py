@@ -145,6 +145,7 @@ class SimplePainterMcpTest(unittest.TestCase):
 
     def test_new_tools_forward_revision_and_native_tree_arguments(self):
         for index, (name, arguments) in enumerate([
+            ('simple_painter_get_space_summaries', {'space_ids': ['project'], 'limit': 5}),
             ('simple_painter_update_organized_draft', {'draft_id': 'draft-1',
              'text': 'new', 'expected_text': 'old', 'expected_updated_at': 'revision'}),
             ('simple_painter_create_mind_map', {'nodes': [
@@ -157,6 +158,14 @@ class SimplePainterMcpTest(unittest.TestCase):
         names = {tool['name'] for tool in self._request(30, 'tools/list')['result']['tools']}
         self.assertIn('simple_painter_update_organized_draft', names)
         self.assertIn('simple_painter_create_mind_map', names)
+        offline = self._request(31, 'tools/list')['result']['tools']
+        self.assertEqual(len(offline), len({t['name'] for t in offline}))
+        search = next(t for t in offline if t['name'] == 'simple_painter_search_canvas_items')
+        props = search['inputSchema']['properties']
+        self.assertIn('all', props['scope']['enum'])
+        self.assertIn('space_ids', props)
+        self.assertIn('cursor', props)
+        self.assertIn('simple_painter_get_space_summaries', names)
 
     def test_discovers_macos_sandbox_descriptor(self):
         fake_home = Path(self.temp_directory.name) / "home"

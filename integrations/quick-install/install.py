@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 MARKETPLACE = 'three-times-local'
-VERSION = '0.3.0'
+VERSION = '0.4.0'
 
 
 def write_json(path: Path, value: dict) -> None:

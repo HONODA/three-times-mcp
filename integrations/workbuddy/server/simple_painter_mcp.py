@@ -14,7 +14,7 @@ from typing import Any, BinaryIO, Dict, List, Optional
 
 
 SERVER_NAME = "simple-painter-workbuddy"
-SERVER_VERSION = "0.3.0"
+SERVER_VERSION = "0.4.0"
 PROTOCOL_VERSION = "2025-06-18"
 SUPPORTED_PROTOCOL_VERSIONS = {"2024-11-05", "2025-03-26", PROTOCOL_VERSION}
 DESCRIPTOR_FILE_NAME = "simple-painter-workbuddy-bridge.json"
@@ -242,7 +242,9 @@ def _fallback_tools() -> List[Dict[str, Any]]:
             "annotations": write_annotation,
         },
     ]
-    return tools + _additional_tools()
+    extra = _additional_tools()
+    extra_names = {tool["name"] for tool in extra}
+    return [tool for tool in tools if tool["name"] not in extra_names] + extra
 
 
 def _additional_tools() -> List[Dict[str, Any]]:
@@ -513,6 +515,119 @@ def _additional_tools() -> List[Dict[str, Any]]:
     }
   },
   {
+    "name": "simple_painter_search_canvas_items",
+    "description": "检索空间组件（支持按卡片 ID 检索、空 query 扫描；支持 current/subtree/all、space_ids、分页游标；embedding 关闭时自动降级关键词检索）。",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "current",
+            "subtree",
+            "all"
+          ]
+        },
+        "space_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "item_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "cursor": {
+          "type": "string"
+        },
+        "page_size": {
+          "type": "number"
+        },
+        "limit": {
+          "type": "number"
+        },
+        "types": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "text",
+              "handwriting",
+              "image",
+              "shape",
+              "connector",
+              "audio",
+              "custom_widget",
+              "space_portal"
+            ]
+          }
+        },
+        "shape_types": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "region": {
+          "type": "string",
+          "enum": [
+            "left",
+            "right",
+            "top",
+            "bottom",
+            "center",
+            "top_left",
+            "top_right",
+            "bottom_left",
+            "bottom_right"
+          ]
+        },
+        "color": {
+          "type": "string"
+        },
+        "near_item_id": {
+          "type": "string"
+        },
+        "match_mode": {
+          "type": "string",
+          "enum": [
+            "hybrid",
+            "semantic",
+            "keyword"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "simple_painter_list_spaces",
+    "description": "列出所有可用空间的名称与 ID，用于发现目标空间。当 navigate_to_space 按名称跳转失败时，调用此工具查看实际空间名称后再导航。",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
     "name": "simple_painter_list_organized_drafts",
     "description": "List draft titles and revision tokens in the current space.",
     "inputSchema": {
@@ -657,6 +772,45 @@ def _additional_tools() -> List[Dict[str, Any]]:
     "annotations": {
       "readOnlyHint": false,
       "idempotentHint": false,
+      "destructiveHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "simple_painter_get_space_summaries",
+    "description": "Read paginated local space evidence without switching canvas: space IDs, names, parent paths, representative card excerpts and organized draft titles. Use this with search_canvas_items(scope=all or space_ids) to recommend a destination. A name or sample is not proof of purpose; explain evidence, respect explicit destinations and ask before placing when ambiguous. Recovery spaces are excluded.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "space_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "sample_limit": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true,
       "destructiveHint": false,
       "openWorldHint": false
     }

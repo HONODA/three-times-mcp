@@ -1,6 +1,6 @@
 {
   "name": "simple-painter",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Connect WorkBuddy to a running Simple Painter canvas for visual thinking, mind maps, and diagram editing.",
   "author": {
     "name": "Simple Painter"
